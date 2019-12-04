@@ -75,35 +75,42 @@ connection.connect(function (err) {
   })
 
 
+  
+  router.post('/api/v1/groups/fetch', function (req, res, next) {
+
+    let filters = req.body.filters
+
+    // console.log('/groups/fetch   is called ')
+    console.log(filters)
+
+    let stmt ='SELECT * FROM groups WHERE 1'
+    //  + 'LEFT JOIN student_group ON groups.id = student_group.student_id '
+
+    if (filters.name && filters.name != '') stmt += ' And groups.name like \'%' + filters.name + '%\''
+    if (filters.id && filters.id != '') stmt += ' AND groups.id=\'' + filters.id + '\''
+    if (filters.status && filters.status != '') stmt += ' AND groups.status =\'' + filters.status + '\''
+    if (filters.level && filters.level != '') stmt += ' AND level =\'' + filters.level + '\''
+    if (filters.timing && filters.timing != '') stmt += ' AND time =\'' + filters.timing + '\''
+
+    if (filters.teacher && filters.teacher != '') stmt += ' And groups.teacher1 like \'%' + filters.teacher + '%\'' + ' OR groups.teacher2 like \'%' + filters.teacher + '%\''
+
+    if (filters.startDateFrom && filters.startDateFrom != '') stmt += ' AND groups.starting_date >= \'' + filters.startDateFrom + '\''
+    if (filters.startDateTo && filters.startDateTo != '') stmt += ' AND groups.starting_date <= \'' + filters.startDateTo + '\''
+
+    if (filters.finishDateFrom && filters.finishDateFrom != '') stmt += ' AND groups.finishing_date >= \'' + filters.finishDateFrom + '\''
+    if (filters.finishDateTo && filters.finishDateTo != '') stmt += ' AND groups.finishing_date <= \'' + filters.finishDateTo + '\''
+    //TODO: complete all filters
 
 
-
-  // fetch groups matching filters  
-  router.get('/api/v1/groups/', function (req, res, next) {
-
-    // const id = parseInt(req.params.id, 10);
-    const filters = req.body
-
-    console.log(req.body)
-
-    let query = 'SELECT * FROM groups WHERE 1 '
-
-    if (filters.id && filters.id != '') query += 'AND id=\'' + filters.id + '\''
-    if (filters.name && filters.name != '') query += ' And name like \'%' + filters.name + '%\''
-    if (filters.level && filters.level != '') query += ' And level like \'%' + filters.level + '%\''
-
-
-    console.log(query)
-
-    connection.query(query, function (err, results) {
+    console.log('stmt = ' + stmt)
+    connection.query(stmt, (err, results, fields) => {
       if (err) {
         return res.status(404).send({
           success: 'false',
-          message: 'group does not exist',
+          message: 'groups did not fetch successfully',
+          err,
         });
       }
-
-      console.log(results)
 
       results = results.map((group) => {
         return {
@@ -111,27 +118,29 @@ connection.connect(function (err) {
           name: group.name,
           level: group.level,
           status: group.status,
-          teacher: group.teacher1,
+          teacher1: group.teacher1,
           teacher2: group.teacher2,
           startDate: group.starting_date,
           endDate: group.finishing_date,
           time: group.time,
           commitLessons: group.commited_lessons,
-          accumulatedLessons:0
+          accumulatedLessons:0,
+          remarks: group.remarks,
         }
       })
 
+      console.log(results)
       return res.status(200).send({
         success: 'true',
-        message: 'group retrieved successfully',
+        message: 'group fetched successfully',
         results,
       })
-
     })
   })
 
+
   
-  // fetch active and potential groups filters  
+  // fetch active and potential groups filters  //modified to fetch all groups 
   router.get('/active_potential/fetch/', function (req, res, next) {
 
     
@@ -153,7 +162,7 @@ connection.connect(function (err) {
           name: group.name,
           level: group.level,
           status: group.status,
-          teacher: group.teacher1,
+          teacher1: group.teacher1,
           teacher2: group.teacher2,
           startDate: group.starting_date,
           endDate: group.finishing_date,
@@ -176,4 +185,54 @@ connection.connect(function (err) {
 
 
 })
+
+
+router.post('/api/v1/update', function (req, res, next) {
+
+  const mapValues = {
+    id: 'id',
+    name: 'name',
+    level: 'level',
+    status: 'status',
+    teacher1: 'teacher1',
+    teacher2: 'teacher2',
+    startDate: 'starting_date',
+    endDate: 'finishing_date',
+    time: 'time',
+    commitLessons: 'commited_lessons',
+    accumulatedLessons:0,
+    remarks: 'remarks',
+  }                           
+
+
+  const data = req.body.data
+
+  console.log(data)
+  let stmt = 'UPDATE groups SET '+ mapValues[data.type] +' = ?  WHERE id = ?'
+  let values = [
+    data.value,
+    data.groupId,
+  ];
+
+  console.log(stmt)
+  
+
+  connection.query(stmt, values, (err, results, fields) => {
+    if (err) {
+      return res.status(404).send({
+        success: 'false',
+        message: 'group did not updated successfully',
+        err,
+      });
+    }
+    return res.status(200).send({
+      success: 'true',
+      message: 'group updated successfully',
+      data,
+    })
+  });
+})
+
+
+
 module.exports = router;

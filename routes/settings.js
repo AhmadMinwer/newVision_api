@@ -2,12 +2,12 @@ var express = require('express');
 var router = express.Router();
 
 let settings = {
-    studentStatus: ['Active', 'Finish', 'Freez'],
+    studentStatus: ['active', 'finish', 'freez'],
     studentSpecialty :['IT', 'Medicine', 'Journalism'],
-    certificationStatus: ['given', 'not yet',],
-    groupStatus: ['Potential','Active', 'Finish',],
+    certificationStatus: ['no', 'yes',],
+    groupStatus: ['potential','active', 'finish', 'all'],
     groupLevel: ['א', 'ב', 'ג', 'ד'],
-    groupTime: ['morning', 'noon', 'evening'],
+    groupTime: ['morning', 'noon', 'evning'],
     groupTeacher: ['Shoshi', 'Mira', 'Zeev'],
 }
 
