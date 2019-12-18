@@ -15,12 +15,12 @@ var connection = mysql.createConnection({
   host: 'localhost',
   user: 'root',
   password: '',
-  database: 'newvisoin'
+  database: 'newvision'
 })
 
 connection.connect(function (err) {
   if (err) throw err
-  console.log('You are now connected to newvisoin database...')
+  console.log('You are now connected to newvision database...')
 
 
   //add group API
@@ -83,7 +83,8 @@ connection.connect(function (err) {
     // console.log('/groups/fetch   is called ')
     console.log(filters)
 
-    let stmt ='SELECT * FROM groups WHERE 1'
+    let stmt = 'SELECT groups.*, COUNT(student_group.group_id) as number_of_students FROM `groups` JOIN student_group ON student_group.group_id = id WHERE 1'
+    // let stmt ='SELECT * FROM groups WHERE 1'
     //  + 'LEFT JOIN student_group ON groups.id = student_group.student_id '
 
     if (filters.name && filters.name != '') stmt += ' And groups.name like \'%' + filters.name + '%\''
@@ -101,6 +102,7 @@ connection.connect(function (err) {
     if (filters.finishDateTo && filters.finishDateTo != '') stmt += ' AND groups.finishing_date <= \'' + filters.finishDateTo + '\''
     //TODO: complete all filters
 
+    stmt += '  GROUP BY groups.id'
 
     console.log('stmt = ' + stmt)
     connection.query(stmt, (err, results, fields) => {
@@ -126,6 +128,7 @@ connection.connect(function (err) {
           commitLessons: group.commited_lessons,
           accumulatedLessons:0,
           remarks: group.remarks,
+          numberOfStudents: group.number_of_students,
         }
       })
 
@@ -145,7 +148,7 @@ connection.connect(function (err) {
 
     
     // let query = 'SELECT * FROM groups WHERE status=\'active\' OR status=\'potential\''
-    let query = 'SELECT * FROM groups'
+    let query = 'SELECT groups.*, COUNT(student_group.group_id) as number_of_students FROM `groups` JOIN student_group ON student_group.group_id = id WHERE 1 GROUP BY groups.id'
 
 
     connection.query(query, function (err, results) {
@@ -170,6 +173,7 @@ connection.connect(function (err) {
           commitLessons: group.commited_lessons,
           accumulatedLessons:0,
           remarks: group.remarks,
+          numberOfStudents: group.number_of_students
         }
       })
 

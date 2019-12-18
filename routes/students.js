@@ -15,12 +15,12 @@ var connection = mysql.createConnection({
   host: 'localhost',
   user: 'root',
   password: '',
-  database: 'newvisoin'
+  database: 'newvision'
 })
 
 connection.connect(function (err) {
   if (err) throw err
-  console.log('You are now connected to newvisoin database...')
+  console.log('You are now connected to newvision database...')
 
 
   // router.get('/api/v1/students/:id', function (req, res, next) {
@@ -50,17 +50,60 @@ connection.connect(function (err) {
   //   })
   // })
 
+  //used by groupPage  -> add student to group -> students search
+  router.post('/api/v1/students/search/fetch', function (req, res, next) {
 
+    let filters = req.body.filters
+
+    console.log(filters)
+
+    let stmt = 'SELECT * '+
+    'FROM students '+
+    'LEFT JOIN student_group ON students.id = student_group.student_id '
+
+    if (filters.filtersGroupId && filters.filtersGroupId != '') stmt += 'AND student_group.group_id = \''+ filters.filtersGroupId + '\' ' + 
+    'WHERE (student_group.group_id !=  \''+ filters.filtersGroupId + '\' ' + 'OR student_group.group_id is NULL) '
+    else 
+    'WHERE (student_group.group_id is NULL) '
+
+      if (filters.filtersId && filters.filtersId != '') stmt += 'AND students.id=\'' + filters.filtersId + '\''
+      if (filters.filtersName && filters.filtersName != '') stmt += ' And students.name like \'%' + filters.filtersName + '%\''
+      if (filters.filtersPhone && filters.filtersPhone != '') stmt += ' AND students.phone =\'' + filters.filtersPhone + '\''
+      if (filters.filtersDate && filters.filtersDate != '') stmt += ' And students.signup_date >= \'' + filters.filtersDate + '\''
+
+
+    console.log('stmt = ' + stmt)
+    connection.query(stmt, (err, results, fields) => {
+      if (err) {
+        return res.status(404).send({
+          success: 'false',
+          message: 'Students did not fetch successfully',
+          err,
+        });
+      }
+
+      console.log(results)
+      return res.status(200).send({
+        success: 'true',
+        message: 'student fetched successfully',
+        results,
+      })
+    })
+  })
+
+
+
+// used by studenPage and student filters
   router.post('/api/v1/students/fetch', function (req, res, next) {
 
     let filters = req.body.filters
 
-    // console.log('/students/fetch   is called ')
     console.log(filters)
 
     let stmt = 'SELECT * FROM ( ' +
       'SELECT students.* , ' +
-      'MAX(groups.level) AS last_level ' +
+      'MAX(groups.level) AS last_level, ' +
+      'student_group.group_id '+
       'FROM students ' +
       'JOIN student_group ON students.id = student_group.student_id ' +
       'JOIN groups ON groups.id = student_group.group_id ' +
@@ -86,9 +129,7 @@ connection.connect(function (err) {
 
     if (filters.cpaBalanceFrom && filters.cpaBalanceFrom != '') stmt += ' AND students.balance >= \'' + filters.cpaBalanceFrom + '\''
     if (filters.cpaBalanceTo && filters.cpaBalanceTo != '') stmt += ' AND students.balance <= \'' + filters.cpaBalanceTo + '\''
-
-
-    //TODO: complete all filters
+    if (filters.groupId && filters.groupId != '') stmt += ' AND group_id = \'' + filters.groupId + '\''
 
 
     console.log('stmt = ' + stmt)
@@ -252,7 +293,7 @@ connection.connect(function (err) {
           creationDate: student.signup_date,
           specialty: student.specialty,
           CPABalance: student.balance,
-          phone: student.phone,
+          phone1: student.phone,
           phone2: student.phone2,
           lastLevel: student.last_level,
           // lastDate: '',
@@ -469,5 +510,52 @@ connection.connect(function (err) {
 
   })
 
+  
+router.post('/api/v1/update', function (req, res, next) {
+
+  const mapValues = {
+    id: 'id',
+    name: 'name',
+    CPA: 'cpa',
+    CPABalance: 'balance',
+    phone1: 'phone',
+    phone2: 'phone2',
+    terms: 'terms',
+    remarks: 'remarks',
+  }                           
+
+
+  const data = req.body.data
+
+  console.log(data)
+  let stmt = 'UPDATE students SET '+ mapValues[data.type] +' = ?  WHERE id = ?'
+  let values = [
+    data.value,
+    data.studentId,
+  ];
+
+  console.log(stmt)
+  
+
+  connection.query(stmt, values, (err, results, fields) => {
+    if (err) {
+      return res.status(404).send({
+        success: 'false',
+        message: 'student did not updated successfully',
+        err,
+      });
+    }
+
+    return res.status(200).send({
+      success: 'true',
+      message: 'student updated successfully',
+      data,
+    })
+  });
+})
+
+
 })
 module.exports = router;
+
+
